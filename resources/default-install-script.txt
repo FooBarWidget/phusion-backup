@@ -1,6 +1,51 @@
+## The commands in this file are run upon restoring to a server.
+## This is a normal shell script, run in bash. Please ensure that
+## all commands run here are idempotent!!
+
 # Standard, essential tools
-apt-get install bash-completion screen
-apt-get install rdiff-backup python-pylibacl-dbg python-pyxattr-dbg
+apt-get update
+apt-get -y upgrade
+apt-get install -y \
+    bash-completion screen wget gdebi-core \
+    rdiff-backup
 
 # Compiler toolchain
-apt-get install build-essential gdb
+apt-get install -y build-essential gdb zlib1g-dev
+
+# SQL databases
+if true; then
+    apt-get install -y \
+        mysql-server libmysqlclient-dev \
+        sqlite3 libsqlite3-dev
+fi
+
+# Ruby Enterprise Edition
+if true; then
+    # basename=ruby-enterprise_1.8.7-2011.03_i386_ubuntu10.04.deb
+    # basename=ruby-enterprise_1.8.7-2011.03_amd64_ubuntu10.04.deb
+    # basename=ruby-enterprise_1.8.7-2011.03_amd64_debian5.0.deb
+    basename=ruby-enterprise_1.8.7-2011.03_amd64_debian6.0.deb
+    wget http://rubyenterpriseedition.googlecode.com/files/$basename
+    gdebi-core -n $basename
+fi
+
+# Install users
+if false; then
+    # Specify list of usernames here, separated by space.
+    # Each user will be created with a random password.
+    # It's up to you to change the passwords later.
+    # USERNAMES="john jane"
+    USERNAMES=""
+    
+    for user in $USERNAMES; do
+        if ! grep -q "^$user:" /etc/passwd; then
+            password=$(tr -dc A-Za-z0-9 < /dev/urandom | (head -c $1 > /dev/null 2>&1 || head -c 15))
+            adduser $user < /dev/null
+            echo
+            echo "$user:$password" | chpasswd
+        fi
+    done
+fi
+
+# Setup ability to send mail
+dpkg-reconfigure exim4-config

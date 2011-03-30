@@ -1,3 +1,7 @@
+## This file specifies which files on the server should be backed up.
+## Filenames may be globs. A '-' prefix means that the glob is excluded
+## from backup.
+
 # Standard system stuff.
 /etc/skel
 /etc/profile
