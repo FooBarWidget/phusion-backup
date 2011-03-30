@@ -14,17 +14,26 @@
 /etc/service
 
 # Backup all home directories, excluding non-critical things like caches.
+- /root/.gem
+- /root/.bundle
+- /root/.*/bundle
 /root
 - /home/*/.gem
 - /home/*/.bundle
 - /home/*/.*/bundle
+- /home/*/.passenger/native_support
++ /home/*/.passenger/standalone/config
+- /home/*/.passenger/standalone
 /home
 
 # Backup all Capistrano-deployed web applications, excluding non-critical things like caches.
 - /u/*/*/shared/cached-copy
 - /u/*/*/shared/bundle
+- /u/*/*/shared/log
+- /u/*/*/shared/pids
 - /u/*/*/releases/*/.git
 - /u/*/*/releases/*/vendor/bundle
+- /u/*/*/releases/*/tmp
 - /u/*/**/*.log
 /u
 
