@@ -1,4 +1,8 @@
 #!/usr/bin/env ruby
+# encoding: binary
+require 'etc'
+require 'optparse'
+
 module PhusionBackup
 
 module TUI
@@ -29,6 +33,7 @@ protected
 	end
 	
 	def substitute_color_tags(data)
+		data = data.to_s
 		data = data.gsub(%r{<b>(.*?)</b>}m, "\e[1m\\1#{DEFAULT_TERMINAL_COLORS}")
 		data.gsub!(%r{<red>(.*?)</red>}m, "\e[1m\e[31m\\1#{DEFAULT_TERMINAL_COLORS}")
 		data.gsub!(%r{<green>(.*?)</green>}m, "\e[1m\e[32m\\1#{DEFAULT_TERMINAL_COLORS}")
@@ -53,6 +58,7 @@ class Core
 	def servers
 		results = []
 		@backupdirs.each do |dir|
+			next if !File.exist?(dir)
 			Dir.foreach(dir) do |hostname|
 				next if hostname =~ /^\./
 				fullname = "#{dir}/#{hostname}"
@@ -66,6 +72,11 @@ class Core
 	
 	def find_server(hostname_or_dir)
 		return servers.find { |s| s.hostname == hostname_or_dir || s.dir == hostname_or_dir }
+	end
+	
+	def generate(dir)
+		copy_file_no_overwrite("#{ROOT}/resources/default-files.txt", "#{dir}/files.txt")
+		copy_file_no_overwrite("#{ROOT}/resources/default-install-script.txt", "#{dir}/install-script.txt")
 	end
 	
 	def run_backup(server)
@@ -116,6 +127,17 @@ private
 		end
 	end
 	
+	def copy_file_no_overwrite(source, target)
+		puts "[Generating] #{target}"
+		if File.exist?(target)
+			puts "<yellow>File already exists. Not overwritten.</yellow>"
+		else
+			File.open(target, "w") do |f|
+				f.write(File.read(source))
+			end
+		end
+	end
+	
 	def create_globbing_filelist(server)
 		filename = "/tmp/phusion-backup-#{Process.pid}.txt"
 		File.open(filename, 'a') do |target|
@@ -140,11 +162,68 @@ class App
 	end
 	
 	def run
-		core = Core.new(["#{Core::ROOT}/backups"])
+		options = {}
+		parser = OptionParser.new do |opts|
+			nl = "\n" << (" " * 37)
+			opts.banner = "General usage: phusion-backup <options...>"
+			opts.separator ""
+			
+			opts.separator "Backup one or more servers:"
+			opts.separator "   phusion-backup hostname1 [hostname2 ...]"
+			opts.separator ""
+			opts.separator "   `hostnameX' is either a host name or directory name."
+			opts.separator ""
+			
+			opts.separator "Display all servers that phusion-backup knows about:"
+			opts.separator "   phusion-backup --list"
+			opts.separator ""
+			
+			opts.separator "Please read the README for tutorial!"
+			opts.separator ""
+			opts.separator "Available options:"
+			opts.on("--list",
+			        "Show all servers that phusion-backup knows#{nl}" +
+			        "about.") do
+				options[:list] = true
+			end
+			opts.on("--generate DIR", String,
+			        "Generate default files (like files.txt)#{nl}" +
+			        "in the given directory.") do |dir|
+				options[:generate] = dir
+			end
+			opts.on("-h", "--help", "Show this help message.") do
+				options[:help] = true
+			end
+		end
+		begin
+			parser.parse!(@argv)
+		rescue OptionParser::ParseError => e
+			puts e
+			puts
+			puts "Please see '--help' for valid options."
+			exit 1
+		end
+
+		if options[:help]
+			puts parser
+			return 0
+		end
+		
+		core = Core.new(["#{Core::ROOT}/backups", "#{home_dir}/Backups"])
+		
+		if options[:list]
+			core.servers.each do |server|
+				printf "%-35s %s\n", server.hostname, server.dir
+			end
+			return 0
+		elsif options[:generate]
+			core.generate(options[:generate])
+			return 0
+		end
 		
 		if @argv.empty?
 			if core.servers.empty?
-				puts_error "There are no servers to backup. Please read README for usage."
+				puts_error "You must create a backup specification first. Please read README for tutorial."
 			else
 				puts_error "Please specify the server you want to backup:"
 				puts
@@ -179,6 +258,11 @@ class App
 		return 0
 	rescue Core::CommandError
 		return 1
+	end
+
+private
+	def home_dir
+		return Etc.getpwuid(Process.uid).dir
 	end
 end
 

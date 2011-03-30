@@ -30,3 +30,4 @@
 
 # Phusion stuff.
 /etc/init.d/firewall
+/opt/production/nginx/conf
