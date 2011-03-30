@@ -1,0 +1,187 @@
+#!/usr/bin/env ruby
+module PhusionBackup
+
+module TUI
+protected
+	DEFAULT_TERMINAL_COLORS = "\e[0m\e[37m\e[40m"
+	
+	def stdout
+		@stdout || STDOUT
+	end
+	
+	def print(text)
+		stdout.write(substitute_color_tags(text))
+		stdout.flush
+	end
+
+	def puts(text = nil)
+		if text
+			stdout.puts(substitute_color_tags(text))
+		else
+			stdout.puts
+		end
+		stdout.flush
+	end
+
+	def puts_error(text)
+		STDERR.puts(substitute_color_tags("<red>#{text}</red>"))
+		STDERR.flush
+	end
+	
+	def substitute_color_tags(data)
+		data = data.gsub(%r{<b>(.*?)</b>}m, "\e[1m\\1#{DEFAULT_TERMINAL_COLORS}")
+		data.gsub!(%r{<red>(.*?)</red>}m, "\e[1m\e[31m\\1#{DEFAULT_TERMINAL_COLORS}")
+		data.gsub!(%r{<green>(.*?)</green>}m, "\e[1m\e[32m\\1#{DEFAULT_TERMINAL_COLORS}")
+		data.gsub!(%r{<yellow>(.*?)</yellow>}m, "\e[1m\e[33m\\1#{DEFAULT_TERMINAL_COLORS}")
+		data.gsub!(%r{<banner>(.*?)</banner>}m, "\e[33m\e[44m\e[1m\\1#{DEFAULT_TERMINAL_COLORS}")
+		return data
+	end
+end
+
+class Server < Struct.new(:hostname, :dir)
+end
+
+class Core
+	ROOT = File.expand_path(File.dirname(__FILE__) + "/..")
+	
+	include TUI
+	
+	def initialize(backupdirs)
+		@backupdirs = backupdirs
+	end
+	
+	def servers
+		results = []
+		@backupdirs.each do |dir|
+			Dir.foreach(dir) do |hostname|
+				next if hostname =~ /^\./
+				fullname = "#{dir}/#{hostname}"
+				if File.directory?(fullname)
+					results << Server.new(hostname, fullname)
+				end
+			end
+		end
+		return results
+	end
+	
+	def find_server(hostname_or_dir)
+		return servers.find { |s| s.hostname == hostname_or_dir || s.dir == hostname_or_dir }
+	end
+	
+	def run_backup(server)
+		if !File.exist?("#{server.dir}/files.txt")
+			puts "<red>No `files.txt` found in this backup directory.</red>"
+			puts
+			puts "Each backup directory must have such a file, in which you " +
+				"specify which files must be backed up. You can create " +
+				"a default one with:"
+			puts
+			puts "  <b>phusion-backup --generate #{server.dir}</b>"
+			exit 1
+		end
+		
+		filename = create_globbing_filelist(server)
+		begin
+			sh!('rdiff-backup',
+				'-v6',
+				'--exclude-sockets',
+				'--include-globbing-filelist', filename,
+				"root@#{server.hostname}::/",
+				"#{server.dir}/data")
+		ensure
+			File.unlink(filename)
+		end
+	end
+
+private
+	class CommandError < StandardError
+	end
+	
+	def sh(*args)
+		puts "# #{args.join(' ')}"
+		result = system(*args)
+		if result
+			return true
+		elsif $?.signaled? && $?.termsig == Signal.list["INT"]
+			raise Interrupt
+		else
+			return false
+		end
+	end
+
+	def sh!(*args)
+		if !sh(*args)
+			puts_error "*** Command failed: #{args.join(' ')}"
+			raise CommandError
+		end
+	end
+	
+	def create_globbing_filelist(server)
+		filename = "/tmp/phusion-backup-#{Process.pid}.txt"
+		File.open(filename, 'a') do |target|
+			File.open("#{server.dir}/files.txt", 'r') do |source|
+				while !source.eof?
+					line = source.readline.sub(/^#.*/, '')
+					target.puts(line)
+				end
+			end
+			target.puts "- **"
+		end
+		return filename
+	end
+end
+
+class App
+	include TUI
+	
+	def initialize(argv)
+		@argv = argv.dup
+		@stdout = STDOUT
+	end
+	
+	def run
+		core = Core.new(["#{Core::ROOT}/backups"])
+		
+		if @argv.empty?
+			if core.servers.empty?
+				puts_error "There are no servers to backup. Please read README for usage."
+			else
+				puts_error "Please specify the server you want to backup:"
+				puts
+				core.servers.each do |server|
+					puts "  phusion-backup #{server.hostname}"
+				end
+				puts
+				puts "For full usage please see `phusion-backup --help` and the README."
+			end
+			return 1
+		end
+		
+		servers = []
+		@argv.each do |name|
+			server = core.find_server(name)
+			if !server
+				puts_error "This program doesn't know anything about the server '#{name}'."
+				puts "If you've misspelled the name, please correct it."
+				puts "If you want to see a list of available servers that this programs knows about, run <b>phusion-backup --list</b>."
+				puts "For general, please refer to the README."
+				exit 1
+			end
+			servers << server
+		end
+		
+		servers.each do |server|
+			puts "<banner>Backing up #{server.hostname} - #{server.dir}</banner>"
+			core.run_backup(server)
+			puts
+		end
+		
+		return 0
+	rescue Core::CommandError
+		return 1
+	end
+end
+
+end
+
+exit(PhusionBackup::App.new(ARGV).run)

@@ -1,0 +1,5 @@
+# Standard, essential tools
+apt-get install bash-completion screen
+
+# Compiler toolchain
+apt-get install build-essential gdb

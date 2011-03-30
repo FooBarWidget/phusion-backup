@@ -1,0 +1,32 @@
+# Standard system stuff.
+/etc/skel
+/etc/profile
+/etc/bash.bashrc
+/etc/hostname
+/etc/nanorc
+/etc/screenrc
+/etc/mailname
+/etc/rc.local
+/var/spool/cron
+
+# Daemon tools.
+- /etc/service/*/supervise
+/etc/service
+
+# Backup all home directories, excluding non-critical things like caches.
+/root
+- /home/*/.gem
+- /home/*/.bundle
+- /home/*/.*/bundle
+/home
+
+# Backup all Capistrano-deployed web applications, excluding non-critical things like caches.
+- /u/*/*/shared/cached-copy
+- /u/*/*/shared/bundle
+- /u/*/*/releases/*/.git
+- /u/*/*/releases/*/vendor/bundle
+- /u/*/**/*.log
+/u
+
+# Phusion stuff.
+/etc/init.d/firewall
