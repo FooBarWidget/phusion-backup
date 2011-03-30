@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
 	s.name = "phusion-backup"
-	s.version = "1.0.0"
+	s.version = "1.0.1"
 	s.authors = ["Hongli Lai"]
 	s.date = "2011-03-30"
 	s.description = "Simple backup tool utilizing rdiff-backup."

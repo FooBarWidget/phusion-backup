@@ -63,7 +63,7 @@ class Core
 				next if hostname =~ /^\./
 				fullname = "#{dir}/#{hostname}"
 				if File.directory?(fullname)
-					results << Server.new(hostname, fullname)
+					results << Server.new(hostname, File.expand_path(fullname))
 				end
 			end
 		end
@@ -71,7 +71,8 @@ class Core
 	end
 	
 	def find_server(hostname_or_dir)
-		return servers.find { |s| s.hostname == hostname_or_dir || s.dir == hostname_or_dir }
+		fulldir = File.expand_path(hostname_or_dir)
+		return servers.find { |s| s.hostname == hostname_or_dir || s.dir == fulldir }
 	end
 	
 	def generate(dir)
