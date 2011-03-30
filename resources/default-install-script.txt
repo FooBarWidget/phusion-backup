@@ -1,5 +1,6 @@
 # Standard, essential tools
 apt-get install bash-completion screen
+apt-get install rdiff-backup python-pylibacl-dbg python-pyxattr-dbg
 
 # Compiler toolchain
 apt-get install build-essential gdb

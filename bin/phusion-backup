@@ -95,13 +95,43 @@ class Core
 		filename = create_globbing_filelist(server)
 		begin
 			sh!('rdiff-backup',
-				'-v6',
+				'-v5',
+				'--print-statistics',
 				'--exclude-sockets',
 				'--include-globbing-filelist', filename,
 				"root@#{server.hostname}::/",
 				"#{server.dir}/data")
+			delete_old_backups(server)
 		ensure
 			File.unlink(filename)
+		end
+	end
+	
+	def delete_old_backups(server)
+		return if !File.exist?(server.dir)
+		command = "rdiff-backup --list-increments --parsable-output \"#{server.dir}/data\""
+		increments = `#{command}`
+		if $?.exitstatus != 0
+			puts_error "The command `#{command}` failed."
+			raise CommandError
+		end
+		
+		timestamps = []
+		increments.split("\n").each do |line|
+			if line =~ /^(\d+) directory$/
+				timestamps << $1.to_i
+			else
+				puts_error "The command `#{command}` returned an unrecognized output line: #{line.inspect}"
+				exit 1
+			end
+		end
+		
+		if timestamps.size > 5
+			puts "<b>Deleting all but the most recent 5 backups...</b>"
+			timestamps.sort! { |a, b| b <=> a }
+			sh!("rdiff-backup", "--remove-older-than",
+				timestamps[4].to_s, "--force",
+				"#{server.dir}/data")
 		end
 	end
 
