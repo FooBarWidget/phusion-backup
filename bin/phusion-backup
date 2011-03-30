@@ -128,10 +128,16 @@ private
 	end
 	
 	def copy_file_no_overwrite(source, target)
-		puts "[Generating] #{target}"
 		if File.exist?(target)
-			puts "<yellow>File already exists. Not overwritten.</yellow>"
+			puts " [CREATE] #{target}"
+			puts "          <yellow>File already exists. Not overwritten.</yellow>"
 		else
+			dir = File.dirname(target)
+			if !File.exist?(dir)
+				puts " [MKDIR]  #{dir}"
+				Dir.mkdir(dir)
+			end
+			puts " [CREATE] #{target}"
 			File.open(target, "w") do |f|
 				f.write(File.read(source))
 			end
