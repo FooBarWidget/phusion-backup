@@ -14,7 +14,7 @@ Gem::Specification.new do |s|
 	]
 	s.homepage = "https://github.com/FooBarWidget/crash-watch"
 	s.rdoc_options = ["--charset=UTF-8"]
-	s.executables = ["crash-watch"]
+	s.executables = ["phusion-backup"]
 	s.require_paths = ["lib"]
 end
 
