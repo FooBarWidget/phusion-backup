@@ -10,12 +10,11 @@
 apt-get update
 apt-get -y upgrade
 apt-get install -y \
-    bash-completion screen wget gdebi-core \
+    bash-completion screen iotop wget gdebi-core \
     rsync rdiff-backup
 
 # Daemon tools
 apt-get install -y daemontools daemontools-run
-
 # Compiler toolchain
 apt-get install -y build-essential gdb zlib1g-dev
 

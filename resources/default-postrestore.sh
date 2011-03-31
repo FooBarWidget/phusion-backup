@@ -10,3 +10,9 @@ if [[ -f /usr/bin/svc ]]; then
         svc -d /etc/service/*
     fi
 fi
+
+# Phusion stuff.
+if [[ -f /etc/init.d/firewall ]]; then
+    /etc/init.d/firewall
+    update-rc.d firewall defaults
+fi
