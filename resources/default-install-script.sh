@@ -1,6 +1,6 @@
-## The commands in this file are run upon restoring to a server.
-## This is a normal shell script, run in bash. Please ensure that
-## all commands run here are idempotent!!
+## The commands in this file are run upon restoring to a server,
+## before any files are copied over. This is a normal shell script,
+## run in bash. Please ensure that all commands run here are idempotent!!
 ##
 ## By default, all debconf questions are postponed until the end
 ## so that you can answer everything at once without delaying the
@@ -11,7 +11,10 @@ apt-get update
 apt-get -y upgrade
 apt-get install -y \
     bash-completion screen wget gdebi-core \
-    rdiff-backup
+    rsync rdiff-backup
+
+# Daemon tools
+apt-get install -y daemontools daemontools-run
 
 # Compiler toolchain
 apt-get install -y build-essential gdb zlib1g-dev
@@ -48,6 +51,7 @@ if true; then
         rm -f $basename
         wget http://rubyenterpriseedition.googlecode.com/files/$basename
         gdebi -n $basename
+        rm -f $basename
     fi
 fi
 
@@ -68,3 +72,6 @@ if true; then
         fi
     done
 fi
+
+# Configure time zone
+dpkg-reconfigure tzdata

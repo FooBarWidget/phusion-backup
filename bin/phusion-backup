@@ -83,7 +83,8 @@ class Core
 	
 	def generate(dir)
 		copy_file_no_overwrite("#{ROOT}/resources/default-files.txt", "#{dir}/files.txt")
-		copy_file_no_overwrite("#{ROOT}/resources/default-install-script.txt", "#{dir}/install-script.txt")
+		copy_file_no_overwrite("#{ROOT}/resources/default-install-script.sh", "#{dir}/install-script.sh")
+		copy_file_no_overwrite("#{ROOT}/resources/default-postrestore.sh", "#{dir}/postrestore.sh")
 	end
 	
 	def run_backup(server)
@@ -177,6 +178,61 @@ class Core
 			puts "No old backups need to be deleted. Only #{timestamps.size} backups " +
 				"have been made so far. For phusion-backup to consider deleting " +
 				"old backups, more than #{MIN_BACKUPS_TO_KEEP} backups must exist."
+		end
+	end
+	
+	def run_restore(server)
+		if !File.exist?("#{server.dir}/data")
+			puts "<red>No `data` subdirectory found in this backup directory.</red>"
+			puts
+			puts "This means that you either don't have a backup, or you specified the wrong directory."
+			exit 1
+		end
+		
+		if File.exist?("#{server.dir}/install-script.sh")
+			script = "/tmp/script-#{Process.pid}.txt"
+			begin
+				File.open(script, 'w') do |f|
+					f.puts File.read("#{ROOT}/resources/header.sh")
+					f.puts File.read("#{server.dir}/install-script.sh")
+					f.puts File.read("#{ROOT}/resources/footer.sh")
+				end
+				sh! "scp", script, "root@#{server.hostname}:/tmp/script.sh"
+				sh! "ssh", "-t", "root@#{server.hostname}",
+					"bash /tmp/script.sh && " +
+					"rm -f /tmp/script.sh"
+			ensure
+				File.unlink(script) rescue nil
+			end
+		end
+		
+		sh! 'ssh', "root@#{server.hostname}",
+			"mkdir -p /backup-tmp"
+		sh! 'rdiff-backup',
+			'--restore-as-of', 'now',
+			'--force',
+			'-v5',
+			'--print-statistics',
+			"#{server.dir}/data",
+			"root@#{server.hostname}::/backup-tmp"
+		sh! 'ssh', "root@#{server.hostname}",
+			"rsync -avz /backup-tmp/ / && chmod 700 /backup-tmp"
+		
+		if File.exist?("#{server.dir}/postrestore.sh")
+			script = "/tmp/script-#{Process.pid}.txt"
+			begin
+				File.open(script, 'w') do |f|
+					f.puts File.read("#{ROOT}/resources/header.sh")
+					f.puts File.read("#{server.dir}/postrestore.sh")
+					f.puts File.read("#{ROOT}/resources/footer.sh")
+				end
+				sh! "scp", script, "root@#{server.hostname}:/tmp/script.sh"
+				sh! "ssh", "-t", "root@#{server.hostname}",
+					"bash /tmp/script.sh && " +
+					"rm -f /tmp/script.sh"
+			ensure
+				File.unlink(script) rescue nil
+			end
 		end
 	end
 
@@ -290,6 +346,10 @@ class App
 			opts.separator "   phusion-backup --list"
 			opts.separator ""
 			
+			opts.separator "Restore the most recent backup:"
+			opts.separator "   phusion-backup --restore hostname"
+			opts.separator ""
+			
 			opts.separator "Please read the README for tutorial!"
 			opts.separator ""
 			opts.separator "Available options:"
@@ -302,6 +362,10 @@ class App
 			        "Generate default files (like files.txt)#{nl}" +
 			        "in the given directory.") do |dir|
 				options[:generate] = dir
+			end
+			opts.on("--restore",
+			        "Enable restore mode") do
+				options[:restore] = true
 			end
 			opts.on("-h", "--help", "Show this help message.") do
 				options[:help] = true
@@ -321,25 +385,36 @@ class App
 			return 0
 		end
 		
-		core = Core.new(["#{Core::ROOT}/backups", "#{home_dir}/Backups"])
+		@core = Core.new(["#{Core::ROOT}/backups", "#{home_dir}/Backups"])
 		
 		if options[:list]
-			core.servers.each do |server|
+			@core.servers.each do |server|
 				printf "%-35s %s\n", server.hostname, server.dir
 			end
 			return 0
 		elsif options[:generate]
-			core.generate(options[:generate])
+			@core.generate(options[:generate])
+			return 0
+		elsif options[:restore]
+			run_in_restore_mode
+			return 0
+		else
+			run_in_backup_mode
 			return 0
 		end
-		
+	rescue Core::CommandError
+		return 1
+	end
+
+private
+	def run_in_backup_mode
 		if @argv.empty?
-			if core.servers.empty?
+			if @core.servers.empty?
 				puts_error "You must create a backup specification first. Please read README for tutorial."
 			else
 				puts_error "Please specify the server you want to backup:"
 				puts
-				core.servers.each do |server|
+				@core.servers.each do |server|
 					puts "  phusion-backup #{server.hostname}"
 				end
 				puts
@@ -350,7 +425,7 @@ class App
 		
 		servers = []
 		@argv.each do |name|
-			server = core.find_server(name)
+			server = @core.find_server(name)
 			if !server
 				puts_error "This program doesn't know anything about the server '#{name}'."
 				puts "If you've misspelled the name, please correct it."
@@ -363,16 +438,42 @@ class App
 		
 		servers.each do |server|
 			puts "<banner>Backing up #{server.hostname} - #{server.dir}</banner>"
-			core.run_backup(server)
+			@core.run_backup(server)
 			puts
 		end
-		
-		return 0
-	rescue Core::CommandError
-		return 1
 	end
-
-private
+	
+	def run_in_restore_mode
+		if @argv.empty?
+			if @core.servers.empty?
+				puts_error "Please specify the host name of the server you want to backup, " +
+					"or specify the path to the backup directory."
+			else
+				puts_error "Please specify the server you want to restore:"
+				puts
+				@core.servers.each do |server|
+					puts "  phusion-backup --restore #{server.hostname}"
+				end
+				puts
+				puts "For full usage please see `phusion-backup --help` and the README."
+			end
+			return 1
+		elsif @argv.size > 1
+			puts_error "You can only specify one server when using --restore."
+			return 1
+		end
+		
+		server = @core.find_server(@argv[0])
+		if !server
+			puts_error "This program doesn't know anything about the server '#{@argv[0]}'."
+			puts "If you've misspelled the name, please correct it."
+			puts "If you want to see a list of available servers that this programs knows about, run <b>phusion-backup --list</b>."
+			puts "For general, please refer to the README."
+			exit 1
+		end
+		@core.run_restore(server)
+	end
+	
 	def home_dir
 		return Etc.getpwuid(Process.uid).dir
 	end
