@@ -6,7 +6,7 @@
 # Disable all daemon tools services until explicitly enabled by administrator.
 if [[ -f /usr/bin/svc ]]; then
     services=$(/bin/ls -1 /etc/service)
-    if [[ ${#services[@]} > 0 ]]; then
+    if [[ ${#services[@]} > 0 ]] && ! [[ ${#services[@]} = 1 && ${servers[0]} = "" ]]; then
         svc -d /etc/service/*
     fi
 fi
