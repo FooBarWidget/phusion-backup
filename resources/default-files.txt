@@ -10,6 +10,8 @@
 /etc/nanorc
 /etc/screenrc
 /etc/mailname
+/etc/exim4
+/etc/postfix
 /etc/rc.local
 /var/spool/cron
 

@@ -1,6 +1,10 @@
 ## The commands in this file are run upon restoring to a server.
 ## This is a normal shell script, run in bash. Please ensure that
 ## all commands run here are idempotent!!
+##
+## By default, all debconf questions are postponed until the end
+## so that you can answer everything at once without delaying the
+## install.
 
 # Standard, essential tools
 apt-get update
@@ -14,9 +18,24 @@ apt-get install -y build-essential gdb zlib1g-dev
 
 # SQL databases
 if true; then
-    apt-get install -y \
-        mysql-server libmysqlclient-dev \
-        sqlite3 libsqlite3-dev
+    # MySQL
+    DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-server libmysqlclient-dev
+    package_name=$(dpkg-query -p mysql-server | grep Depends | grep -oEi 'mysql-server-[0-9a-z\.]+')
+    run_at_end dpkg-reconfigure $package_name
+    
+    # SQLite3
+    apt-get install -y sqlite3 libsqlite3-dev
+fi
+
+# Email support
+if true; then
+    # Exim
+    DEBIAN_FRONTEND=noninteractive apt-get install -y exim4
+    run_at_end dpkg-reconfigure -p medium exim4-config
+    
+    # Postfix
+    # DEBIAN_FRONTEND=noninteractive apt-get install -y postfix
+    # run_at_end dpkg-reconfigure -p medium postfix
 fi
 
 # Ruby Enterprise Edition
@@ -25,12 +44,15 @@ if true; then
     # basename=ruby-enterprise_1.8.7-2011.03_amd64_ubuntu10.04.deb
     # basename=ruby-enterprise_1.8.7-2011.03_amd64_debian5.0.deb
     basename=ruby-enterprise_1.8.7-2011.03_amd64_debian6.0.deb
-    wget http://rubyenterpriseedition.googlecode.com/files/$basename
-    gdebi-core -n $basename
+    if [[ ! -f /usr/local/bin/ruby ]]; then
+        rm -f $basename
+        wget http://rubyenterpriseedition.googlecode.com/files/$basename
+        gdebi -n $basename
+    fi
 fi
 
 # Install users
-if false; then
+if true; then
     # Specify list of usernames here, separated by space.
     # Each user will be created with a random password.
     # It's up to you to change the passwords later.
@@ -46,6 +68,3 @@ if false; then
         fi
     done
 fi
-
-# Setup ability to send mail
-dpkg-reconfigure exim4-config
