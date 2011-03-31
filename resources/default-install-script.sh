@@ -14,13 +14,16 @@
 apt-get update
 apt-get -y upgrade
 apt-get install -y \
-    bash-completion screen iotop wget gdebi-core \
+    bash-completion screen iotop wget telnet gdebi-core \
     rsync rdiff-backup
 
 # Non-essential but useful tools
 apt-get install -y daemontools daemontools-run
 # Compiler toolchain
-apt-get install -y build-essential gdb zlib1g-dev
+apt-get install -y build-essential gdb zlib1g-dev libcurl4-openssl-dev \
+    libssl-dev libxml2-dev libxslt1-dev
+# Utilities
+apt-get install -y pv git-core
 
 # SQL databases
 if true; then
@@ -77,4 +80,4 @@ if true; then
 fi
 
 # Configure time zone
-if cold_restoring; then dpkg-reconfigure tzdata; fi
+if cold_restoring; then run_at_end dpkg-reconfigure tzdata; fi

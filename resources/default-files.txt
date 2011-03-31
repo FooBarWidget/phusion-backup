@@ -13,6 +13,7 @@
 /etc/exim4
 /etc/postfix
 /etc/mysql
+/etc/mongodb.conf
 /etc/rc.local
 /var/spool/cron
 

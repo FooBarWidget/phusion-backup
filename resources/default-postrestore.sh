@@ -16,3 +16,4 @@ if [[ -f /etc/init.d/firewall ]]; then
     /etc/init.d/firewall
     update-rc.d firewall defaults
 fi
+mkdir -p /var/log/nginx

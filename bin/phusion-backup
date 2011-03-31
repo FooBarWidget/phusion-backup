@@ -207,7 +207,8 @@ class Core
 		end
 		
 		sh! 'ssh', "root@#{server.hostname}",
-			"mkdir -p /var/cache/phusion-backup"
+			"mkdir -p /var/cache/phusion-backup && " +
+			"chmod 755 /var/cache/phusion-backup"
 		sh! 'rdiff-backup',
 			'--restore-as-of', 'now',
 			'--force',
@@ -216,7 +217,8 @@ class Core
 			"#{server.dir}/data",
 			"root@#{server.hostname}::/var/cache/phusion-backup"
 		sh! 'ssh', "root@#{server.hostname}",
-			"rsync -avz /var/cache/phusion-backup/ / && chmod 700 /var/cache/phusion-backup"
+			"rsync -avz /var/cache/phusion-backup/ / && " +
+			"chmod 700 /var/cache/phusion-backup"
 		
 		if File.exist?("#{server.dir}/postrestore.sh")
 			script = "/tmp/script-#{Process.pid}.txt"
