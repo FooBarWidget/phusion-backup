@@ -1,10 +1,14 @@
-## The commands in this file are run upon restoring to a server,
-## before any files are copied over. This is a normal shell script,
-## run in bash. Please ensure that all commands run here are idempotent!!
+## The commands in this file are run upon restoring to a server.
+## This is a normal shell script, run in bash. Please ensure that
+## all commands run here are idempotent!!
 ##
-## By default, all debconf questions are postponed until the end
-## so that you can answer everything at once without delaying the
-## install.
+## == DebConf question
+## 
+## This default script makes sure that debconf questions are only
+## asked when "cold restoring", i.e. this is the first time restoring
+## to the server. Such questions are postponed until the end of this
+## script so that you can answer everything at once without delaying
+## the install.
 
 # Standard, essential tools
 apt-get update
@@ -13,7 +17,7 @@ apt-get install -y \
     bash-completion screen iotop wget gdebi-core \
     rsync rdiff-backup
 
-# Daemon tools
+# Non-essential but useful tools
 apt-get install -y daemontools daemontools-run
 # Compiler toolchain
 apt-get install -y build-essential gdb zlib1g-dev
@@ -23,7 +27,7 @@ if true; then
     # MySQL
     DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-server libmysqlclient-dev
     package_name=$(dpkg-query -p mysql-server | grep Depends | grep -oEi 'mysql-server-[0-9a-z\.]+')
-    run_at_end dpkg-reconfigure $package_name
+    if cold_restoring; then run_at_end dpkg-reconfigure $package_name; fi
     
     # SQLite3
     apt-get install -y sqlite3 libsqlite3-dev
@@ -33,11 +37,11 @@ fi
 if true; then
     # Exim
     DEBIAN_FRONTEND=noninteractive apt-get install -y exim4
-    run_at_end dpkg-reconfigure -p medium exim4-config
+    if cold_restoring; then run_at_end dpkg-reconfigure -p medium exim4-config; fi
     
     # Postfix
     # DEBIAN_FRONTEND=noninteractive apt-get install -y postfix
-    # run_at_end dpkg-reconfigure -p medium postfix
+    # if cold_restoring; then run_at_end dpkg-reconfigure -p medium postfix; fi
 fi
 
 # Ruby Enterprise Edition
@@ -73,4 +77,4 @@ if true; then
 fi
 
 # Configure time zone
-dpkg-reconfigure tzdata
+if cold_restoring; then dpkg-reconfigure tzdata; fi

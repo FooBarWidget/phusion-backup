@@ -33,4 +33,8 @@ function run_end_commands {
     set -v
 }
 
+function cold_restoring {
+    [[ -f /var/cache/phusion-backup ]]
+}
+
 set -ev
