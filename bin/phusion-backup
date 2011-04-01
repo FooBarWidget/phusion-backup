@@ -206,18 +206,35 @@ class Core
 			end
 		end
 		
-		sh! 'ssh', "root@#{server.hostname}",
-			"mkdir -p /var/cache/phusion-backup && " +
-			"chmod 700 /var/cache/phusion-backup && " +
-			"mkdir -p /var/cache/phusion-backup/data && " +
-			"chmod 700 /var/cache/phusion-backup/data"
-		sh! 'rdiff-backup',
-			'--restore-as-of', 'now',
-			'--force',
-			'-v5',
-			'--print-statistics',
-			"#{server.dir}/data",
-			"root@#{server.hostname}::/var/cache/phusion-backup/data"
+		exit_code = `ssh root@#{server.hostname} 'test -e /var/cache/phusion-backup; echo $?'`
+		if exit_code == "1\n"
+			# Cache directory doesn't exist. Cold restoring.
+			puts '<b>Cold restoring</b>'
+			sh! 'ssh', "root@#{server.hostname}",
+				"mkdir -p /var/cache/phusion-backup && " +
+				"chmod 700 /var/cache/phusion-backup"
+			sh! "cd '#{server.dir}' && " +
+				"tar -c data | " +
+				"ssh -C root@#{server.hostname} '" +
+					"mkdir -p /var/cache/phusion-backup/cold && " +
+					"cd /var/cache/phusion-backup/cold && " +
+					"tar -xvf - && " +
+					"rdiff-backup --restore-as-of now " +
+						"--force -v5 --print-statistics " +
+						"/var/cache/phusion-backup/cold/data " +
+						"/var/cache/phusion-backup/data && " +
+					"rm -rf /var/cache/phusion-backup/cold" +
+				"'"
+		else
+			puts '<b>Hot restoring</b>'
+			sh! 'rdiff-backup',
+				'--restore-as-of', 'now',
+				'--force',
+				'-v5',
+				'--print-statistics',
+				"#{server.dir}/data",
+				"root@#{server.hostname}::/var/cache/phusion-backup/data"
+		end
 		sh! 'ssh', "root@#{server.hostname}",
 			"rsync -avz /var/cache/phusion-backup/data/ /"
 		
