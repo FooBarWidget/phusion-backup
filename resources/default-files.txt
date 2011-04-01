@@ -21,27 +21,33 @@
 - /etc/service/*/supervise
 /etc/service
 
+# By default RubyGems-installed gems and Bundler-installed gems are backed
+# up too so that you don't have to reinstall them manually on restore. If you
+# don't like this choice and prefers to omit them, then uncomment the
+# following lines:
+#- /u/*/*/shared/bundle
+#- /u/*/*/releases/*/vendor/bundle
+#- /root/.gem
+#- /root/.bundle
+#- /root/.*/bundle
+#- /home/*/.gem
+#- /home/*/.bundle
+#- /home/*/.*/bundle
+
 # Backup all home directories, excluding non-critical things like caches.
-- /root/.gem
-- /root/.bundle
-- /root/.*/bundle
 /root
-- /home/*/.gem
-- /home/*/.bundle
-- /home/*/.*/bundle
 - /home/*/.passenger/native_support
 + /home/*/.passenger/standalone/config
 - /home/*/.passenger/standalone
 /home
 
-# Backup all Capistrano-deployed web applications, excluding non-critical things like caches.
+# Backup all Capistrano-deployed web applications, excluding non-critical
+# things like caches and log files.
 - /u/*/*/shared/cached-copy
-- /u/*/*/shared/bundle
-- /u/*/*/shared/log
-- /u/*/*/shared/pids
+- /u/*/*/shared/log/*
+- /u/*/*/shared/pids/*
 - /u/*/*/releases/*/.git
-- /u/*/*/releases/*/vendor/bundle
-- /u/*/*/releases/*/tmp
+- /u/*/*/releases/*/tmp/*
 - /u/*/**/*.log
 /u
 
