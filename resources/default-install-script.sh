@@ -2,7 +2,7 @@
 ## This is a normal shell script, run in bash. Please ensure that
 ## all commands run here are idempotent!!
 ##
-## == DebConf question
+## == DebConf questions
 ## 
 ## This default script makes sure that debconf questions are only
 ## asked when "cold restoring", i.e. this is the first time restoring
@@ -59,6 +59,10 @@ if true; then
         wget http://rubyenterpriseedition.googlecode.com/files/$basename
         gdebi -n $basename
         rm -f $basename
+        
+        # gem install --no-rdoc --no-ri nokogiri
+        # gem install --no-rdoc --no-ri rails --version 2.3.11
+        # gem install --no-rdoc --no-ri rails
     fi
 fi
 
