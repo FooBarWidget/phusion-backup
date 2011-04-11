@@ -4,6 +4,8 @@
 
 # Standard system stuff.
 /etc/skel
+/etc/ssh
+/etc/motd
 /etc/profile
 /etc/bash.bashrc
 /etc/hostname
