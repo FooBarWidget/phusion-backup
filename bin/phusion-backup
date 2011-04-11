@@ -209,8 +209,7 @@ class Core
 		sh! 'ssh', "root@#{server.hostname}",
 			"mkdir -p /var/cache/phusion-backup && " +
 			"chmod 700 /var/cache/phusion-backup && " +
-			"mkdir -p /var/cache/phusion-backup/data && " +
-			"chmod 700 /var/cache/phusion-backup/data"
+			"mkdir -p /var/cache/phusion-backup/data"
 		sh! 'rdiff-backup',
 			'--restore-as-of', 'now',
 			'--force',
