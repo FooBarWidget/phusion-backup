@@ -23,6 +23,8 @@ apt-get install -y daemontools daemontools-run
 # Compiler toolchain
 apt-get install -y build-essential gdb zlib1g-dev libcurl4-openssl-dev \
     libssl-dev libxml2-dev libxslt1-dev
+# Hard disk health monitoring
+apt-get install -y smartmontools
 # Utilities
 apt-get install -y pv git-core
 

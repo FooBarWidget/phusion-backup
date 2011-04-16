@@ -16,6 +16,8 @@
 /etc/mysql
 /etc/mongodb.conf
 /etc/rc.local
+/etc/smartd.conf
+/etc/default/smartmontools
 /var/spool/cron
 
 # Daemon tools.
