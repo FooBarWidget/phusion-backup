@@ -31,7 +31,7 @@ if true; then
     # MySQL
     DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-server libmysqlclient-dev
     package_name=$(dpkg-query -p mysql-server | grep Depends | grep -oEi 'mysql-server-[0-9a-z\.]+')
-    if cold_restoring; then run_at_end dpkg-reconfigure $package_name; fi
+    run_at_end dpkg-reconfigure $package_name
     
     # SQLite3
     apt-get install -y sqlite3 libsqlite3-dev
@@ -41,11 +41,11 @@ fi
 if true; then
     # Exim
     DEBIAN_FRONTEND=noninteractive apt-get install -y exim4
-    if cold_restoring; then run_at_end dpkg-reconfigure -p medium exim4-config; fi
+    run_at_end dpkg-reconfigure -p medium exim4-config
     
     # Postfix
     # DEBIAN_FRONTEND=noninteractive apt-get install -y postfix
-    # if cold_restoring; then run_at_end dpkg-reconfigure -p medium postfix; fi
+    # run_at_end dpkg-reconfigure -p medium postfix
 fi
 
 # Ruby Enterprise Edition
@@ -85,4 +85,4 @@ if true; then
 fi
 
 # Configure time zone
-if cold_restoring; then run_at_end dpkg-reconfigure tzdata; fi
+run_at_end dpkg-reconfigure tzdata
