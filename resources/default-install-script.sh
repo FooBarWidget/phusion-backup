@@ -16,7 +16,7 @@ apt-get -y upgrade
 apt-get install -y \
     bash-completion screen iotop wget telnet gdebi-core \
     rsync rdiff-backup \
-    ntp
+    ntp acl
 
 # Non-essential but useful tools
 apt-get install -y daemontools daemontools-run

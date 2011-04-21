@@ -55,5 +55,6 @@
 /u
 
 # Phusion stuff.
+/tools
 /etc/init.d/firewall
 /opt/production/nginx/conf
