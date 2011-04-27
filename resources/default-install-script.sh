@@ -20,11 +20,13 @@ apt-get install -y \
 
 # Non-essential but useful tools
 apt-get install -y daemontools daemontools-run
+# Security
+apt-get install -y fail2ban
 # Compiler toolchain
 apt-get install -y build-essential gdb zlib1g-dev libcurl4-openssl-dev \
     libssl-dev libxml2-dev libxslt1-dev
-# Hard disk health monitoring
-apt-get install -y smartmontools
+# Monitoring tools
+apt-get install -y smartmontools sysstat
 # Utilities
 apt-get install -y pv git-core
 

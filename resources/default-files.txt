@@ -7,6 +7,7 @@
 /etc/motd
 /etc/profile
 /etc/bash.bashrc
+/etc/hosts
 /etc/hostname
 /etc/nanorc
 /etc/screenrc
@@ -18,6 +19,7 @@
 /etc/rc.local
 /etc/smartd.conf
 /etc/default/smartmontools
+/etc/default/sysstat
 /var/spool/cron
 
 # Daemon tools.
@@ -57,4 +59,5 @@
 # Phusion stuff.
 /tools
 /etc/init.d/firewall
+/var/backups/mysql
 /opt/production/nginx/conf
