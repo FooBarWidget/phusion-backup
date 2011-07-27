@@ -138,18 +138,16 @@ class Core
 			nbackups = timestamps.size
 			ndelete = 0
 			
-			timestamps.sort! { |a, b| b <=> a }
+			timestamps.sort! { |a, b| a <=> b }
 			cleanable_timestamps = timestamps.dup
 			MIN_BACKUPS_TO_KEEP.times do
 				cleanable_timestamps.pop
 			end
-			cleanable_timestamps.each do |timestamp|
-				if timestamp < MAX_BACKUP_AGE.ago.to_i
-					ndelete += 1
-				end
+			cleanable_timestamps.reject! do |timestamp|
+				timestamp >= MAX_BACKUP_AGE.ago.to_i
 			end
 			
-			if ndelete == 0
+			if cleanable_timestamps.empty?
 				puts "Nothing deleted because although there are more than " +
 					"#{MIN_BACKUPS_TO_KEEP} backups (namely #{nbackups}), " +
 					"none of them are older than #{MAX_BACKUP_AGE_STR}."
@@ -157,7 +155,7 @@ class Core
 				puts "<yellow>Deleting backups older than #{MAX_BACKUP_AGE_STR}, excluding " +
 					"the #{MIN_BACKUPS_TO_KEEP} most recent backups.</yellow>"
 				timestamps.each do |timestamp|
-					if timestamp < MAX_BACKUP_AGE.ago.to_i
+					if cleanable_timestamps.include?(timestamp)
 						action = "Delete"
 					else
 						action = "Keep"
@@ -171,7 +169,7 @@ class Core
 				end
 				puts
 				sh!("rdiff-backup", "--remove-older-than",
-					MAX_BACKUP_AGE.ago.to_i.to_s, "--force",
+					(cleanable_timestamps.last + 1).to_s, "--force",
 					"#{server.dir}/data")
 			end
 		else
